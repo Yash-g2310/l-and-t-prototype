@@ -1,8 +1,8 @@
 "use client";
 import React, { useEffect, useRef, useState, memo } from "react";
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 import { twMerge } from "tailwind-merge";
-import { cn } from "@/lib/utils";
+import { cn } from "../../lib/utils";
 
 export function TextRevealCard({ text, revealText, children, className }) {
   const [widthPercentage, setWidthPercentage] = useState(0);

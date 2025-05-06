@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "../../lib/utils";
 import { useMotionTemplate, useMotionValue, motion } from "motion/react";
 
 const Input = React.forwardRef(({ className, type, ...props }, ref) => {

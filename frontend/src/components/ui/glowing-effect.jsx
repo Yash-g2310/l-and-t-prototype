@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef } from "react";
-import { cn } from "@/lib/utils";
-import { animate } from "motion/react";
+import { cn } from "../../lib/utils";
+import { animate } from "framer-motion";
 
 const GlowingEffect = React.memo(({
   blur = 0,

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import DashboardLayout from './layout/DashboardLayout';
 import {
     Sidebar,
     SidebarBody,
@@ -44,41 +45,48 @@ export default function Projects() {
         { label: 'Settings', href: '#', icon: <IconSettings className="h-5 w-5 text-neutral-500 dark:text-neutral-400" /> },
     ];
 
-    useEffect(() => {
-        // Fetch projects from API
-        const fetchProjects = async () => {
-            try {
-                  setLoading(true);
-                  setError(null);
-                  const token = localStorage.getItem('token');
+    const fetchProjects = async () => {
+        try {
+            console.log("Fetching projects...");
+            setLoading(true);
+            setError(null);
+            const token = localStorage.getItem('token');
+            console.log("Token available:", !!token);
+            
+            if (token) {
+                const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/projects/`;
+                console.log("API URL:", apiUrl);
                 
-                  if (token) {
-                    const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/projects/`, {
-                      method: 'GET',
-                      headers: {
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
-                      }
-                    });
-
-                    const data = await response.json();
-                    if (!response.ok) {
-                      throw new Error(data.detail || 'Failed to fetch projects');
                     }
-
-                    console.log('Projects fetched:', data);
-                    setProjects(data);
-                  }
-                } catch (error) {
-                  console.error('Error fetching projects:', error);
-                  setError(error.message || 'Failed to load projects');
-                } finally {
-                  setLoading(false);
+                });
+                
+                console.log("Response status:", response.status);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    console.error("API error response:", data);
+                    throw new Error(data.detail || 'Failed to fetch projects');
                 }
-              };
+                
+                console.log('Projects fetched:', data);
+                setProjects(data);
+            }
+        } catch (error) {
+            console.error('Error fetching projects:', error);
+            setError(error.message || 'Failed to load projects');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-            fetchProjects();
-        }, []);
+    useEffect(() => {
+        fetchProjects();
+    }, []);
 
     const handleCreateProject = () => {
         navigate('/create-project');
@@ -97,54 +105,8 @@ export default function Projects() {
     };
 
     return (
-        <div className="flex h-screen bg-neutral-50 dark:bg-zinc-900">
-            {/* Sidebar */}
-            <Sidebar>
-                <SidebarBody>
-                    {/* Logo or Brand - Only visible when expanded */}
-                    <SidebarHeader>
-                        <div className="flex items-center">
-                            <span className="text-xl font-bold dark:text-white">Construction AI</span>
-                        </div>
-                    </SidebarHeader>
-
-                    {/* Navigation Links - Icons always visible, text only when expanded */}
-                    <div className="space-y-1">
-                        {navLinks.map((link) => (
-                            <SidebarLink key={link.href} link={link} />
-                        ))}
-                    </div>
-
-                    {/* User Info and Logout at Bottom - Only visible when expanded */}
-                    <SidebarFooter>
-                        <div className="flex items-center mb-4">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center mr-2 text-white font-medium">
-                                {user?.first_name?.charAt(0) || user?.username?.charAt(0) || 'U'}
-                            </div>
-                            <div className="text-sm dark:text-neutral-300">
-                                <div>{user?.first_name} {user?.last_name}</div>
-                                <div className="text-xs text-neutral-500">{user?.role}</div>
-                            </div>
-                        </div>
-                        <SidebarLink
-                            link={{
-                                label: 'Logout',
-                                href: '#',
-                                icon: <IconLogout className="h-5 w-5 text-red-500" />
-                            }}
-                            onClick={(e) => {
-                                e.preventDefault();
-                                logout();
-                            }}
-                            className="text-red-500"
-                        />
-                    </SidebarFooter>
-                </SidebarBody>
-            </Sidebar>
-            
-
-            {/* Main Content */}
-            <div className="flex-1 overflow-auto p-8 pt-6">
+        <DashboardLayout>
+        <div className="p-8 pt-6">
                 <div className="max-w-7xl mx-auto">
                     {/* Header */}
                     <div className="mb-8">
@@ -154,19 +116,19 @@ export default function Projects() {
 
                     {/* Projects Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {error && (
-  <div className="col-span-full">
-    <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400">
-      <p className="font-medium">Error loading projects: {error}</p>
-      <button 
-        onClick={() => fetchProjects()} 
-        className="mt-2 text-sm bg-red-100 dark:bg-red-800/30 px-3 py-1 rounded-md hover:bg-red-200 dark:hover:bg-red-800/50"
-      >
-        Retry
-      </button>
-    </div>
-  </div>
-)}
+                        {error && (
+                            <div className="col-span-full">
+                                <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400">
+                                    <p className="font-medium">Error loading projects: {error}</p>
+                                    <button 
+                                        onClick={fetchProjects} 
+                                        className="mt-2 text-sm bg-red-100 dark:bg-red-800/30 px-3 py-1 rounded-md hover:bg-red-200 dark:hover:bg-red-800/50"
+                                    >
+                                        Retry
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                         {/* Create Project Card - Only visible for supervisors */}
                         {user?.role === 'supervisor' && (
                             <CardContainer containerClassName="py-0 h-full">
@@ -247,8 +209,8 @@ export default function Projects() {
                             ))
                         )}
                     </div>
-                </div>
+                    </div>
             </div>
-        </div>
+        </DashboardLayout>
     );
 }

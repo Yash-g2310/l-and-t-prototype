@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { cn } from "../../lib/utils";
 import React, { createContext, useState, useContext, useRef, useEffect } from "react";
 
 const MouseEnterContext = createContext(undefined);
