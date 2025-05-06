@@ -8,6 +8,7 @@ class User(AbstractUser):
         ('worker', 'Worker'),
         ('supervisor', 'Supervisor'),
     )
+    email = models.EmailField(unique=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='worker')
     phone = models.CharField(max_length=15, blank=True, null=True)
     profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
