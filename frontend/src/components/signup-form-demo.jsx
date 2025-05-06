@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useAuth } from '../context/AuthContext';
 import {
   IconBrandGithub,
   IconBrandGoogle,
@@ -15,6 +16,7 @@ import {
 } from "@tabler/icons-react";
 
 export default function SignupFormDemo({ onSwitchToSignin }) {
+  const { register } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formValues, setFormValues] = useState({
@@ -23,9 +25,11 @@ export default function SignupFormDemo({ onSwitchToSignin }) {
     email: "",
     password: "",
     confirmPassword: "",
+    role: "worker", // Default role
   });
   const [errors, setErrors] = useState({});
   const [passwordStrength, setPasswordStrength] = useState(0);
+  const [apiError, setApiError] = useState(""); // State for API error
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -41,10 +45,11 @@ export default function SignupFormDemo({ onSwitchToSignin }) {
       setPasswordStrength(strength);
     }
   };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setApiError(""); // Reset API error
+    setErrors({}); // Reset errors
 
     // Validate form
     const newErrors = {};
@@ -58,11 +63,43 @@ export default function SignupFormDemo({ onSwitchToSignin }) {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
-      // Simulate API call
-      setTimeout(() => {
-        console.log("Form submitted", formValues);
+      try {
+        // Format data for the API
+        const userData = {
+          username: formValues.email,
+          email: formValues.email,
+          password: formValues.password,
+          password2: formValues.confirmPassword,
+          first_name: formValues.firstname,
+          last_name: formValues.lastname || "",
+          role: formValues.role,
+        };
+        
+        await register(userData);
+      } catch (error) {
+        // Keep your error handling as is
+        if (error.errors) {
+          const serverErrors = {};
+          
+          Object.keys(error.errors).forEach(field => {
+            if (Array.isArray(error.errors[field])) {
+              serverErrors[field] = error.errors[field].join(' ');
+            } else {
+              serverErrors[field] = error.errors[field];
+            }
+          });
+          
+          setErrors(prev => ({ ...prev, ...serverErrors }));
+          
+          if (error.errors.detail || error.errors.non_field_errors) {
+            setApiError(error.errors.detail || error.errors.non_field_errors);
+          }
+        } else {
+          setApiError(error.message || "Registration failed. Please try again.");
+        }
+      } finally {
         setLoading(false);
-      }, 1500);
+      }
     } else {
       setLoading(false);
     }
@@ -82,7 +119,14 @@ export default function SignupFormDemo({ onSwitchToSignin }) {
         Create your account to get started
       </p>
 
-      <form className="my-8" onSubmit={handleSubmit}>
+      {apiError && (
+        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
+          <IconAlertCircle className="inline-block h-4 w-4 mr-2" />
+          {apiError}
+        </div>
+      )}
+
+<form className="my-8" onSubmit={handleSubmit}>
         <div className="mb-4 flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2">
           <LabelInputContainer>
             <Label htmlFor="firstname">First name</Label>
@@ -116,20 +160,38 @@ export default function SignupFormDemo({ onSwitchToSignin }) {
 
         <LabelInputContainer className="mb-4">
           <Label htmlFor="email">Email Address</Label>
-          <Input
-            id="email"
-            placeholder="projectmayhem@fc.com"
-            type="email"
-            value={formValues.email}
-            onChange={handleChange}
-            className={`transition duration-200 focus:ring-2 focus:ring-cyan-500/20 ${errors.email ? 'border-red-500' : ''}`}
-          />
+          <div className="relative">
+            <Input
+              id="email"
+              placeholder="projectmayhem@fc.com"
+              type="email"
+              value={formValues.email}
+              onChange={handleChange}
+              className={`pr-10 transition duration-200 focus:ring-2 focus:ring-cyan-500/20 ${errors.email ? 'border-red-500' : ''}`}
+            />
+            {formValues.email && formValues.email.includes('@') && formValues.email.includes('.') ? (
+              <IconCheck size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500" />
+            ) : null}
+          </div>
           {errors.email && (
             <p className="text-xs text-red-500 mt-1 flex items-center">
               <IconAlertCircle className="h-3 w-3 mr-1" />
               {errors.email}
             </p>
           )}
+        </LabelInputContainer>
+
+        <LabelInputContainer className="mb-4">
+          <Label htmlFor="role">Role</Label>
+          <select
+            id="role"
+            value={formValues.role}
+            onChange={handleChange}
+            className={`flex h-10 w-full rounded-md border border-input px-3 py-2 text-sm transition duration-200 focus:ring-2 focus:ring-cyan-500/20 dark:bg-zinc-800 dark:border-zinc-700 dark:text-white ${errors.role ? 'border-red-500' : ''}`}
+          >
+            <option value="worker">Worker</option>
+            <option value="supervisor">Supervisor</option>
+          </select>
         </LabelInputContainer>
 
         <LabelInputContainer className="mb-4">
@@ -152,19 +214,27 @@ export default function SignupFormDemo({ onSwitchToSignin }) {
             </button>
           </div>
           {passwordStrength > 0 && (
-            <div className="mt-2 flex space-x-1">
-              {[1, 2, 3, 4].map((level) => (
-                <div
-                  key={level}
-                  className={`h-1 w-full rounded-full ${passwordStrength >= level
-                      ? level <= 1 ? 'bg-red-500'
-                        : level <= 2 ? 'bg-orange-500'
-                          : level <= 3 ? 'bg-yellow-500'
-                            : 'bg-green-500'
-                      : 'bg-neutral-200 dark:bg-neutral-700'
-                    }`}
-                />
-              ))}
+            <div className="mt-2">
+              <div className="flex space-x-1 mb-1">
+                {[1, 2, 3, 4].map((level) => (
+                  <div
+                    key={level}
+                    className={`h-1 w-full rounded-full ${passwordStrength >= level
+                        ? level <= 1 ? 'bg-red-500'
+                          : level <= 2 ? 'bg-orange-500'
+                            : level <= 3 ? 'bg-yellow-500'
+                              : 'bg-green-500'
+                        : 'bg-neutral-200 dark:bg-neutral-700'
+                      }`}
+                  />
+                ))}
+              </div>
+              {passwordStrength >= 3 && (
+                <p className="text-xs text-green-500 flex items-center">
+                  <IconCheck className="h-3 w-3 mr-1" />
+                  Strong password
+                </p>
+              )}
             </div>
           )}
           {errors.password && (
@@ -173,6 +243,9 @@ export default function SignupFormDemo({ onSwitchToSignin }) {
               {errors.password}
             </p>
           )}
+          <p className="text-xs text-gray-500 mt-1">
+            Password must be at least 8 characters with mix of letters, numbers and symbols
+          </p>
         </LabelInputContainer>
 
         <LabelInputContainer className="mb-6">
@@ -186,7 +259,11 @@ export default function SignupFormDemo({ onSwitchToSignin }) {
               onChange={handleChange}
               className={`pr-10 transition duration-200 focus:ring-2 focus:ring-cyan-500/20 ${errors.confirmPassword ? 'border-red-500' : ''}`}
             />
-            <IconLock size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+            {formValues.confirmPassword && formValues.password === formValues.confirmPassword ? (
+              <IconCheck size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500" />
+            ) : (
+              <IconLock size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+            )}
           </div>
           {errors.confirmPassword && (
             <p className="text-xs text-red-500 mt-1 flex items-center">

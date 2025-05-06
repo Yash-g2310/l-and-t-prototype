@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useAuth } from '../context/AuthContext';
 import {
   IconBrandGithub,
   IconBrandGoogle,
@@ -13,6 +14,7 @@ import {
 } from "@tabler/icons-react";
 
 export default function SigninFormDemo({ onSwitchToSignup }) {
+  const { login } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formValues, setFormValues] = useState({
@@ -20,15 +22,17 @@ export default function SigninFormDemo({ onSwitchToSignup }) {
     password: "",
   });
   const [errors, setErrors] = useState({});
+  const [apiError, setApiError] = useState(""); // For API error handling
 
   const handleChange = (e) => {
     const { id, value } = e.target;
     setFormValues(prev => ({ ...prev, [id]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setApiError(""); // Reset API error
     
     // Validate form
     const newErrors = {};
@@ -38,11 +42,40 @@ export default function SigninFormDemo({ onSwitchToSignup }) {
     setErrors(newErrors);
     
     if (Object.keys(newErrors).length === 0) {
-      // Simulate API call
-      setTimeout(() => {
-        console.log("Form submitted", formValues);
+      try {
+        // Use login from auth context
+        await login({
+          username: formValues.email,
+          password: formValues.password,
+        });
+        // No need to navigate - AuthContext will handle redirection
+      } catch (error) {
+        console.error('Login error:', error);
+        // Handle field-specific errors
+        if (error.errors) {
+          const serverErrors = {};
+          
+          // Map backend errors to form fields
+          Object.keys(error.errors).forEach(field => {
+            if (Array.isArray(error.errors[field])) {
+              serverErrors[field] = error.errors[field].join(' ');
+            } else {
+              serverErrors[field] = error.errors[field];
+            }
+          });
+          
+          setErrors(prev => ({ ...prev, ...serverErrors }));
+          
+          // If there's a non-field error
+          if (error.errors.detail || error.errors.non_field_errors) {
+            setApiError(error.errors.detail || error.errors.non_field_errors);
+          }
+        } else {
+          setApiError(error.message || "Login failed. Please try again.");
+        }
+      } finally {
         setLoading(false);
-      }, 1500);
+      }
     } else {
       setLoading(false);
     }
@@ -61,6 +94,13 @@ export default function SigninFormDemo({ onSwitchToSignup }) {
       <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
         Sign in to your account
       </p>
+
+      {apiError && (
+        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
+          <IconAlertCircle className="inline-block h-4 w-4 mr-2" />
+          {apiError}
+        </div>
+      )}
 
       <form className="my-8" onSubmit={handleSubmit}>
         <LabelInputContainer className="mb-4">
