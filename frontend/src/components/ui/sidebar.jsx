@@ -1,4 +1,4 @@
-"use client";;
+"use client";
 import { cn } from "@/lib/utils";
 import React, { useState, createContext, useContext } from "react";
 import { AnimatePresence, motion } from "motion/react";
@@ -64,11 +64,11 @@ export const DesktopSidebar = ({
     <>
       <motion.div
         className={cn(
-          "h-full px-4 py-4 hidden  md:flex md:flex-col bg-neutral-100 dark:bg-neutral-800 w-[300px] shrink-0",
+          "h-full px-4 py-4 hidden md:flex md:flex-col bg-neutral-100 dark:bg-neutral-800 shrink-0 border-r border-neutral-200 dark:border-neutral-700",
           className
         )}
         animate={{
-          width: animate ? (open ? "300px" : "60px") : "300px",
+          width: animate ? (open ? "300px" : "70px") : "300px",
         }}
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
@@ -89,7 +89,7 @@ export const MobileSidebar = ({
     <>
       <div
         className={cn(
-          "h-10 px-4 py-4 flex flex-row md:hidden  items-center justify-between bg-neutral-100 dark:bg-neutral-800 w-full"
+          "h-14 px-4 py-4 flex flex-row md:hidden items-center justify-between bg-neutral-100 dark:bg-neutral-800 w-full border-b border-neutral-200 dark:border-neutral-700"
         )}
         {...props}>
         <div className="flex justify-end z-20 w-full">
@@ -134,7 +134,7 @@ export const SidebarLink = ({
   return (
     <a
       href={link.href}
-      className={cn("flex items-center justify-start gap-2  group/sidebar py-2", className)}
+      className={cn("flex items-center justify-start gap-2 group/sidebar py-3 px-2 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors", className)}
       {...props}>
       {link.icon}
       <motion.span
@@ -142,9 +142,45 @@ export const SidebarLink = ({
           display: animate ? (open ? "inline-block" : "none") : "inline-block",
           opacity: animate ? (open ? 1 : 0) : 1,
         }}
-        className="text-neutral-700 dark:text-neutral-200 text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block !p-0 !m-0">
+        className="text-neutral-700 dark:text-neutral-200 text-sm transition duration-150 whitespace-pre inline-block !p-0 !m-0">
         {link.label}
       </motion.span>
     </a>
+  );
+};
+
+export const SidebarHeader = ({ children }) => {
+  const { open, animate } = useSidebar();
+  
+  return (
+    <motion.div
+      animate={{
+        opacity: animate ? (open ? 1 : 0) : 1,
+        height: animate ? (open ? "auto" : "0px") : "auto",
+        marginBottom: animate ? (open ? "16px" : "0px") : "16px",
+        overflow: "hidden"
+      }}
+      className="px-2"
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+export const SidebarFooter = ({ children }) => {
+  const { open, animate } = useSidebar();
+  
+  return (
+    <motion.div
+      animate={{
+        opacity: animate ? (open ? 1 : 0) : 1,
+        height: animate ? (open ? "auto" : "0px") : "auto",
+        marginTop: animate ? (open ? "auto" : "0px") : "auto",
+        overflow: "hidden"
+      }}
+      className="mt-auto border-t border-neutral-200 dark:border-neutral-700 pt-4 px-2"
+    >
+      {children}
+    </motion.div>
   );
 };
