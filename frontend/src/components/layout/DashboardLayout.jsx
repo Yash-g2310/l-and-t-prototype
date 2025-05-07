@@ -22,8 +22,7 @@ import { Link, useLocation } from 'react-router-dom';
 export default function DashboardLayout({ children }) {
   const { user, logout } = useAuth();
   const location = useLocation();
-  
-  // Define sidebar navigation links
+
   const navLinks = [
     { label: 'Dashboard', href: '/', icon: <IconHome className="h-5 w-5 text-neutral-500 dark:text-neutral-400" /> },
     { label: 'Projects', href: '/projects', icon: <IconBriefcase className="h-5 w-5 text-neutral-500 dark:text-neutral-400" /> },
@@ -34,10 +33,9 @@ export default function DashboardLayout({ children }) {
     { label: 'Settings', href: '#', icon: <IconSettings className="h-5 w-5 text-neutral-500 dark:text-neutral-400" /> },
   ];
 
-  // Custom SidebarLink component that uses React Router's Link
   const CustomSidebarLink = ({ link, className, ...props }) => {
     const isActive = location.pathname === link.href;
-    
+
     if (link.href === '#') {
       return (
         <SidebarLink 
@@ -47,7 +45,7 @@ export default function DashboardLayout({ children }) {
         />
       );
     }
-    
+
     return (
       <Link to={link.href}>
         <SidebarLink 
@@ -61,24 +59,18 @@ export default function DashboardLayout({ children }) {
 
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-neutral-800 overflow-hidden">
-      {/* Sidebar */}
       <Sidebar>
         <SidebarBody>
-          {/* Logo or Brand - Only visible when expanded */}
           <SidebarHeader>
             <div className="flex items-center">
               <span className="text-xl font-bold dark:text-white">Construction AI</span>
             </div>
           </SidebarHeader>
-          
-          {/* Navigation Links - Icons always visible, text only when expanded */}
           <div className="space-y-1">
             {navLinks.map((link) => (
               <CustomSidebarLink key={link.href} link={link} />
             ))}
           </div>
-          
-          {/* User Info and Logout at Bottom - Only visible when expanded */}
           <SidebarFooter>
             <div className="flex items-center mb-4">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center mr-2 text-white font-medium">
@@ -104,8 +96,6 @@ export default function DashboardLayout({ children }) {
           </SidebarFooter>
         </SidebarBody>
       </Sidebar>
-      
-      {/* Main Content - Exactly matching the example with rounded border */}
       <div className="flex flex-1">
         <div className="flex h-full w-full flex-1 flex-col gap-2 rounded-tl-2xl border border-neutral-200 bg-white p-2 md:p-6 dark:border-neutral-700 dark:bg-neutral-900 overflow-auto">
           {children}

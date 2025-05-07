@@ -10,6 +10,7 @@ import Projects from './components/projects';
 import CreateProject from './components/create-project';
 import Profile from './components/profile';
 import { AuroraBackground } from './components/ui/aurora-background';
+import ProjectDetail from './components/project/ProjectDetail';
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
@@ -75,6 +76,12 @@ function App() {
             <ProtectedRoute>
               <Profile />
             </ProtectedRoute>
+          } />
+
+          <Route path="/projects/:projectId" element={
+              <ProtectedRoute>
+                <ProjectDetail />
+              </ProtectedRoute>
           } />
           
           {/* Redirect all other routes to dashboard */}

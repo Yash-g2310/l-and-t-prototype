@@ -4,16 +4,9 @@ import DashboardLayout from './layout/DashboardLayout';
 import { CardContainer, CardBody, CardItem } from './ui/3d-card';
 import { GlowingEffect } from './ui/glowing-effect';
 import {
-    IconHome,
-    IconUser,
-    IconSettings,
-    IconBriefcase,
-    IconCalendar,
-    IconUsers,
-    IconChartPie,
     IconPlus,
-    IconCalendarTime,
-    IconMapPin
+    IconMapPin,
+    IconCalendarTime
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -24,34 +17,34 @@ export default function Projects() {
     const [error, setError] = useState(null);
     const navigate = useNavigate();
 
-    const fetchProjects = async () => {
-        try {
-            setLoading(true);
-            setError(null);
-            const token = localStorage.getItem('token');
-
-            if (token) {
-                const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/projects/`;
-                const response = await fetch(apiUrl, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.detail || 'Failed to fetch projects');
-                setProjects(data);
-            }
-        } catch (error) {
-            setError(error.message || 'Failed to load projects');
-        } finally {
-            setLoading(false);
-        }
-    };
-
     useEffect(() => {
+        const fetchProjects = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                const token = localStorage.getItem('token');
+
+                if (token) {
+                    const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/projects/`;
+                    const response = await fetch(apiUrl, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.detail || 'Failed to fetch projects');
+                    setProjects(data);
+                }
+            } catch (error) {
+                setError(error.message || 'Failed to load projects');
+            } finally {
+                setLoading(false);
+            }
+        };
+
         fetchProjects();
     }, []);
 
@@ -69,10 +62,10 @@ export default function Projects() {
         <DashboardLayout>
             <div className="p-8 pt-6">
                 <div className="max-w-7xl mx-auto">
-                    <div className="mb-8">
+                    <header className="mb-8">
                         <h1 className="text-2xl font-bold dark:text-white">Projects</h1>
                         <p className="text-gray-600 dark:text-gray-400 mt-1">Manage and monitor your construction projects</p>
-                    </div>
+                    </header>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {error && (
@@ -80,7 +73,7 @@ export default function Projects() {
                                 <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400">
                                     <p className="font-medium">Error loading projects: {error}</p>
                                     <button
-                                        onClick={fetchProjects}
+                                        onClick={() => fetchProjects()}
                                         className="mt-2 text-sm bg-red-100 dark:bg-red-800/30 px-3 py-1 rounded-md hover:bg-red-200 dark:hover:bg-red-800/50"
                                     >
                                         Retry
@@ -90,21 +83,20 @@ export default function Projects() {
                         )}
 
                         {user?.role === 'supervisor' && (
-                            <CardContainer containerClassName="py-0 h-full">
-                                <CardBody
-                                    className="relative h-full w-full bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/30 dark:to-blue-900/30 rounded-xl border border-dashed border-indigo-300 dark:border-indigo-700 p-6 cursor-pointer"
-                                    onClick={handleCreateProject}
-                                >
-                                    <CardItem translateZ={20} className="flex flex-col items-center justify-center text-center h-full">
-                                        <div className="w-16 h-16 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center mb-4">
-                                            <IconPlus className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
-                                        </div>
-                                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Create New Project</h3>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400">Add a new construction project to your portfolio</p>
-                                    </CardItem>
-                                    <GlowingEffect disabled={false} borderWidth={1.5} spread={30} />
-                                </CardBody>
-                            </CardContainer>
+                            <div className="h-full" onClick={handleCreateProject}>
+                                <CardContainer containerClassName="py-0 h-full">
+                                    <CardBody className="relative h-full w-full bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/30 dark:to-blue-900/30 rounded-xl border border-dashed border-indigo-300 dark:border-indigo-700 p-6 cursor-pointer">
+                                        <CardItem translateZ={20} className="flex flex-col items-center justify-center text-center h-full">
+                                            <div className="w-16 h-16 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center mb-4">
+                                                <IconPlus className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+                                            </div>
+                                            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Create New Project</h3>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">Add a new construction project to your portfolio</p>
+                                        </CardItem>
+                                        <GlowingEffect disabled={false} borderWidth={1.5} spread={30} />
+                                    </CardBody>
+                                </CardContainer>
+                            </div>
                         )}
 
                         {loading ? (
@@ -146,8 +138,7 @@ export default function Projects() {
                                                         {new Date(project.start_date).toLocaleDateString()} - {new Date(project.end_date).toLocaleDateString()}
                                                     </span>
                                                 </div>
-                                                <span className={`px-2.5 py-1 text-xs rounded-full capitalize 
-                                                    ${statusColors[project.status]}`}>
+                                                <span className={`px-2.5 py-1 text-xs rounded-full capitalize ${statusColors[project.status]}`}>
                                                     {project.status.replace('_', ' ')}
                                                 </span>
                                             </div>
