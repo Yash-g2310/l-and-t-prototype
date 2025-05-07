@@ -60,7 +60,7 @@ export default function DashboardLayout({ children }) {
   };
 
   return (
-    <div className="flex h-screen bg-neutral-50 dark:bg-zinc-900">
+    <div className="flex h-screen bg-gray-100 dark:bg-neutral-800 overflow-hidden">
       {/* Sidebar */}
       <Sidebar>
         <SidebarBody>
@@ -105,9 +105,11 @@ export default function DashboardLayout({ children }) {
         </SidebarBody>
       </Sidebar>
       
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        {children}
+      {/* Main Content - Exactly matching the example with rounded border */}
+      <div className="flex flex-1">
+        <div className="flex h-full w-full flex-1 flex-col gap-2 rounded-tl-2xl border border-neutral-200 bg-white p-2 md:p-6 dark:border-neutral-700 dark:bg-neutral-900 overflow-auto">
+          {children}
+        </div>
       </div>
     </div>
   );

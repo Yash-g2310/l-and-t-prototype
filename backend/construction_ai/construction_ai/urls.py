@@ -6,12 +6,19 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from accounts.views import RegisterView, UserProfileView
-from projects.views import ProjectViewSet, ProjectUpdateViewSet
+from projects.views import (
+    ProjectViewSet, ProjectUpdateViewSet, ProjectWorkerViewSet,
+    ProjectSupplierViewSet, ProjectTimelineViewSet, RiskAnalysisViewSet
+)
 from chat.views import ChatRoomViewSet, MessageViewSet
 
 router = DefaultRouter()
 router.register(r'projects', ProjectViewSet)
 router.register(r'project-updates', ProjectUpdateViewSet)
+router.register(r'project-workers', ProjectWorkerViewSet)
+router.register(r'project-suppliers', ProjectSupplierViewSet)
+router.register(r'project-timeline', ProjectTimelineViewSet)
+router.register(r'project-risks', RiskAnalysisViewSet)
 router.register(r'chat-rooms', ChatRoomViewSet, basename='chatroom')
 router.register(r'messages', MessageViewSet, basename='message')
 

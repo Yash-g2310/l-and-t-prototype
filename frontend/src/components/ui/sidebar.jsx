@@ -64,11 +64,15 @@ export const DesktopSidebar = ({
     <>
       <motion.div
         className={cn(
-          "h-full px-4 py-4 hidden md:flex md:flex-col bg-neutral-100 dark:bg-neutral-800 shrink-0 border-r border-neutral-200 dark:border-neutral-700",
+          "h-full px-4 py-4 hidden md:flex md:flex-col bg-neutral-100 dark:bg-neutral-800 shrink-0 border-r border-neutral-200 dark:border-neutral-700 relative",
           className
         )}
         animate={{
           width: animate ? (open ? "300px" : "70px") : "300px",
+        }}
+        transition={{
+          duration: 0.3, // Slowed down from 0.2 to 0.3
+          ease: "easeInOut"
         }}
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
@@ -136,13 +140,24 @@ export const SidebarLink = ({
       href={link.href}
       className={cn("flex items-center justify-start gap-2 group/sidebar py-3 px-2 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors", className)}
       {...props}>
-      {link.icon}
+      {/* Ensure icon maintains fixed size */}
+      <div className="w-5 h-5 shrink-0 flex items-center justify-center">
+        {link.icon}
+      </div>
       <motion.span
         animate={{
-          display: animate ? (open ? "inline-block" : "none") : "inline-block",
           opacity: animate ? (open ? 1 : 0) : 1,
+          width: animate ? (open ? "auto" : 0) : "auto",
         }}
-        className="text-neutral-700 dark:text-neutral-200 text-sm transition duration-150 whitespace-pre inline-block !p-0 !m-0">
+        transition={{
+          duration: 0.25, // Slowed down from 0.15 to 0.25
+          ease: "easeInOut"
+        }}
+        style={{
+          overflow: "hidden",
+          whiteSpace: "nowrap",
+        }}
+        className="text-neutral-700 dark:text-neutral-200 text-sm transition duration-150">
         {link.label}
       </motion.span>
     </a>
@@ -154,15 +169,20 @@ export const SidebarHeader = ({ children }) => {
   
   return (
     <motion.div
+      className="overflow-hidden px-2"
       animate={{
         opacity: animate ? (open ? 1 : 0) : 1,
-        height: animate ? (open ? "auto" : "0px") : "auto",
+        width: animate ? (open ? "100%" : "0%") : "100%",
         marginBottom: animate ? (open ? "16px" : "0px") : "16px",
-        overflow: "hidden"
       }}
-      className="px-2"
+      transition={{
+        duration: 0.25, // Slowed down from 0.15 to 0.25
+        ease: "easeInOut"
+      }}
     >
-      {children}
+      <div className="min-w-[200px]">
+        {children}
+      </div>
     </motion.div>
   );
 };
@@ -172,15 +192,19 @@ export const SidebarFooter = ({ children }) => {
   
   return (
     <motion.div
+      className="mt-auto border-t border-neutral-200 dark:border-neutral-700 pt-4 px-2 overflow-hidden"
       animate={{
         opacity: animate ? (open ? 1 : 0) : 1,
-        height: animate ? (open ? "auto" : "0px") : "auto",
-        marginTop: animate ? (open ? "auto" : "0px") : "auto",
-        overflow: "hidden"
+        width: animate ? (open ? "100%" : "0%") : "100%",
       }}
-      className="mt-auto border-t border-neutral-200 dark:border-neutral-700 pt-4 px-2"
+      transition={{
+        duration: 0.25, // Slowed down from 0.15 to 0.25
+        ease: "easeInOut"
+      }}
     >
-      {children}
+      <div className="min-w-[200px]">
+        {children}
+      </div>
     </motion.div>
   );
 };

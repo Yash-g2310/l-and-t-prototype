@@ -5,6 +5,6 @@ from .models import ChatRoom
 
 @receiver(post_save, sender=Project)
 def create_chat_room(sender, instance, created, **kwargs):
-    """Create a ChatRoom whenever a new Project is created"""
-    if created:
-        ChatRoom.objects.create(project=instance)
+    """Create a ChatRoom if one doesn't exist for this project"""
+    from chat.models import ChatRoom
+    ChatRoom.objects.get_or_create(project=instance)

@@ -1,133 +1,94 @@
 "use client";
 
-import { motion } from "framer-motion"; // Changed from "motion/react"
-import { cn } from "../../lib/utils"; // Fixed import path
+import { motion } from "framer-motion";
+import { cn } from "../../lib/utils";
+import { useEffect, useState } from "react";
 
 export const ThreeDMarquee = ({
   images,
-  className,
-  isBackground = false,
+  className
 }) => {
+  const [loaded, setLoaded] = useState(false);
+  
+  // Ensure we have enough images - duplicate if needed
+  const safeImages = [...images, ...images].slice(0, Math.max(16, images.length));
+  
+  // Preload images to avoid rendering issues
+  useEffect(() => {
+    const imagePromises = safeImages.map(src => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.src = src;
+        img.onload = resolve;
+        img.onerror = resolve; // Resolve even on error to continue
+      });
+    });
+    
+    Promise.all(imagePromises).then(() => {
+      setLoaded(true);
+    });
+  }, [safeImages]);
+  
   // Split the images array into 4 equal parts
-  const chunkSize = Math.ceil(images.length / 4);
+  const chunkSize = Math.ceil(safeImages.length / 4);
   const chunks = Array.from({ length: 4 }, (_, colIndex) => {
     const start = colIndex * chunkSize;
-    return images.slice(start, start + chunkSize);
+    return safeImages.slice(start, Math.min(start + chunkSize, safeImages.length));
   });
   
   return (
     <div
       className={cn(
-        "mx-auto block h-[600px] overflow-hidden rounded-2xl max-sm:h-100",
-        isBackground && "absolute inset-0 w-full h-full opacity-30 -z-10 rounded-none",
-        className,
+        "w-full h-full overflow-hidden rounded-xl relative",
+        className
       )}
-      style={{
-        perspective: "1000px",
-      }}
     >
-      <div className="flex w-full h-full items-center justify-center">
-        <div className="w-[1720px] h-[1720px] shrink-0 scale-50 sm:scale-75 lg:scale-100">
-          <div
-            style={{
-              transform: "rotateX(55deg) rotateY(0deg) rotateZ(-45deg)",
-              transformStyle: "preserve-3d",
-            }}
-            className="relative top-96 right-[50%] grid w-full h-full origin-top-left grid-cols-4 gap-8"
-          >
-            {chunks.map((subarray, colIndex) => (
-              <motion.div
-                animate={{ y: colIndex % 2 === 0 ? 100 : -100 }}
-                transition={{
-                  duration: colIndex % 2 === 0 ? 10 : 15,
-                  repeat: Infinity,
-                  repeatType: "reverse",
-                }}
-                key={colIndex + "marquee"}
-                className="flex flex-col items-start gap-8"
-              >
-                <GridLineVertical className="-left-4" offset="80px" />
-                {subarray.map((image, imageIndex) => (
-                  <div className="relative" key={imageIndex + image}>
-                    <GridLineHorizontal className="-top-4" offset="20px" />
-                    <motion.img
-                      whileHover={{
-                        y: -10,
-                      }}
-                      transition={{
-                        duration: 0.3,
-                        ease: "easeInOut",
-                      }}
-                      key={imageIndex + image}
-                      src={image}
-                      alt={`Image ${imageIndex + 1}`}
-                      className="aspect-[970/700] rounded-lg object-cover ring ring-gray-950/5 hover:shadow-2xl"
-                      width={970}
-                      height={700}
-                    />
-                  </div>
-                ))}
-              </motion.div>
-            ))}
+      {loaded && (
+        <div className="w-full h-full flex items-center justify-center">
+          {/* Scale up container to fill blank spaces */}
+          <div className="w-[120%] h-[120%] transform-gpu origin-center -mt-10">
+            <div
+              style={{
+                transformStyle: "preserve-3d",
+                transform: "rotateX(20deg) rotateZ(-15deg) scale(1.2)",
+                transformOrigin: "center center",
+              }}
+              className="grid grid-cols-4 gap-4 h-full w-full"
+            >
+              {chunks.map((columnImages, colIndex) => (
+                <motion.div
+                  key={`col-${colIndex}`}
+                  className="flex flex-col gap-4"
+                  animate={{ 
+                    y: colIndex % 2 === 0 ? [0, -100, 0] : [0, 100, 0] 
+                  }}
+                  transition={{
+                    duration: 15 + colIndex * 2,
+                    repeat: Infinity,
+                    ease: "linear"
+                  }}
+                >
+                  {columnImages.map((image, imgIndex) => (
+                    <motion.div 
+                      key={`img-${colIndex}-${imgIndex}`} 
+                      className="relative overflow-hidden rounded-lg transform-gpu"
+                      whileHover={{ scale: 1.05, rotate: -2 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <img
+                        src={image}
+                        alt={`Construction ${colIndex}-${imgIndex}`}
+                        className="w-full h-auto object-cover rounded-lg aspect-video shadow-md ring-1 ring-gray-950/5 dark:ring-white/5"
+                        loading="lazy"
+                      />
+                    </motion.div>
+                  ))}
+                </motion.div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
-  );
-};
-
-const GridLineHorizontal = ({
-  className,
-  offset,
-}) => {
-  return (
-    <div
-      style={{
-        "--background": "#ffffff",
-        "--color": "rgba(0, 0, 0, 0.2)",
-        "--height": "1px",
-        "--width": "5px",
-        "--fade-stop": "90%",
-        "--offset": offset || "200px", //-100px if you want to keep the line inside
-        "--color-dark": "rgba(255, 255, 255, 0.2)",
-      }}
-      className={cn(
-        "absolute left-[calc(var(--offset)/2*-1)] h-[var(--height)] w-[calc(100%+var(--offset))]",
-        "bg-[linear-gradient(to_right,var(--color),var(--color)_50%,transparent_0,transparent)]",
-        "[background-size:var(--width)_var(--height)]",
-        "[mask:linear-gradient(to_left,var(--background)_var(--fade-stop),transparent),_linear-gradient(to_right,var(--background)_var(--fade-stop),transparent),_linear-gradient(black,black)]",
-        "z-30",
-        "dark:bg-[linear-gradient(to_right,var(--color-dark),var(--color-dark)_50%,transparent_0,transparent)]",
-        className,
-      )}
-    ></div>
-  );
-};
-
-const GridLineVertical = ({
-  className,
-  offset,
-}) => {
-  return (
-    <div
-      style={{
-        "--background": "#ffffff",
-        "--color": "rgba(0, 0, 0, 0.2)",
-        "--height": "5px",
-        "--width": "1px",
-        "--fade-stop": "90%",
-        "--offset": offset || "150px", //-100px if you want to keep the line inside
-        "--color-dark": "rgba(255, 255, 255, 0.2)",
-      }}
-      className={cn(
-        "absolute top-[calc(var(--offset)/2*-1)] h-[calc(100%+var(--offset))] w-[var(--width)]",
-        "bg-[linear-gradient(to_bottom,var(--color),var(--color)_50%,transparent_0,transparent)]",
-        "[background-size:var(--width)_var(--height)]",
-        "[mask:linear-gradient(to_top,var(--background)_var(--fade-stop),transparent),_linear-gradient(to_bottom,var(--background)_var(--fade-stop),transparent),_linear-gradient(black,black)]",
-        "z-30",
-        "dark:bg-[linear-gradient(to_bottom,var(--color-dark),var(--color-dark)_50%,transparent_0,transparent)]",
-        className,
-      )}
-    ></div>
   );
 };
