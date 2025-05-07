@@ -1,57 +1,56 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { 
-  Sidebar, 
-  SidebarBody, 
-  SidebarLink,
-  SidebarHeader,
-  SidebarFooter
-} from './ui/sidebar';
+import DashboardLayout from './layout/DashboardLayout';
 import { CardContainer, CardBody, CardItem } from './ui/3d-card';
 import { GlowingEffect } from './ui/glowing-effect';
 import { 
-  IconHome, 
-  IconUser, 
-  IconSettings,
-  IconBriefcase,
-  IconCalendar,
-  IconUsers,
-  IconLogout,
-  IconChartPie,
   IconArrowLeft,
-  IconCheck
+  IconCheck,
+  IconExclamationCircle
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import MapSelector from './project/MapSelector';
 
 export default function CreateProject() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
+    detailed_description: '',
     location: '',
+    latitude: null,
+    longitude: null,
     start_date: '',
     end_date: '',
-    status: 'planning'
+    status: 'planning',
+    estimated_workers: 0,
+    budget: 0,
+    risk_assessment: '',
+    mitigation_strategies: '',
+    supply_chain_requirements: '',
+    resource_allocation: '',
+    equipment_requirements: ''
   });
   
-  // Define sidebar navigation links
-  const navLinks = [
-    { label: 'Dashboard', href: '/', icon: <IconHome className="h-5 w-5 text-neutral-500 dark:text-neutral-400" /> },
-    { label: 'Projects', href: '/projects', icon: <IconBriefcase className="h-5 w-5 text-neutral-500 dark:text-neutral-400" /> },
-    { label: 'Schedule', href: '#', icon: <IconCalendar className="h-5 w-5 text-neutral-500 dark:text-neutral-400" /> },
-    { label: 'Team', href: '#', icon: <IconUsers className="h-5 w-5 text-neutral-500 dark:text-neutral-400" /> },
-    { label: 'Analytics', href: '#', icon: <IconChartPie className="h-5 w-5 text-neutral-500 dark:text-neutral-400" /> },
-    { label: 'Profile', href: '/profile', icon: <IconUser className="h-5 w-5 text-neutral-500 dark:text-neutral-400" /> },
-    { label: 'Settings', href: '#', icon: <IconSettings className="h-5 w-5 text-neutral-500 dark:text-neutral-400" /> },
-  ];
-
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type } = e.target;
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: type === 'number' ? parseFloat(value) || 0 : value 
+    }));
+  };
+
+  const handleLocationSelect = (location, lat, lng) => {
+    setFormData(prev => ({
+      ...prev,
+      location,
+      latitude: lat,
+      longitude: lng
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -79,53 +78,29 @@ export default function CreateProject() {
     }
   };
 
+  // Redirect if user is not a supervisor
+  if (user?.role !== 'supervisor') {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center p-8 h-full">
+          <IconExclamationCircle className="w-16 h-16 text-red-500 mb-4" />
+          <h1 className="text-2xl font-bold text-red-600 mb-2">Access Denied</h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            Only supervisors can create projects.
+          </p>
+          <button
+            onClick={() => navigate('/projects')}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+          >
+            Back to Projects
+          </button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
-    <div className="flex h-screen bg-neutral-50 dark:bg-zinc-900">
-      {/* Sidebar */}
-      <Sidebar>
-        <SidebarBody>
-          {/* Logo or Brand - Only visible when expanded */}
-          <SidebarHeader>
-            <div className="flex items-center">
-              <span className="text-xl font-bold dark:text-white">Construction AI</span>
-            </div>
-          </SidebarHeader>
-          
-          {/* Navigation Links - Icons always visible, text only when expanded */}
-          <div className="space-y-1">
-            {navLinks.map((link) => (
-              <SidebarLink key={link.href} link={link} />
-            ))}
-          </div>
-          
-          {/* User Info and Logout at Bottom - Only visible when expanded */}
-          <SidebarFooter>
-            <div className="flex items-center mb-4">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center mr-2 text-white font-medium">
-                {user?.first_name?.charAt(0) || user?.username?.charAt(0) || 'U'}
-              </div>
-              <div className="text-sm dark:text-neutral-300">
-                <div>{user?.first_name} {user?.last_name}</div>
-                <div className="text-xs text-neutral-500">{user?.role}</div>
-              </div>
-            </div>
-            <SidebarLink 
-              link={{
-                label: 'Logout',
-                href: '#',
-                icon: <IconLogout className="h-5 w-5 text-red-500" />
-              }}
-              onClick={(e) => {
-                e.preventDefault();
-                logout();
-              }}
-              className="text-red-500"
-            />
-          </SidebarFooter>
-        </SidebarBody>
-      </Sidebar>
-      
-      {/* Main Content */}
+    <DashboardLayout>
       <div className="flex-1 overflow-auto p-8 pt-6">
         <div className="max-w-4xl mx-auto">
           {/* Back button */}
@@ -155,99 +130,281 @@ export default function CreateProject() {
               
               <CardItem translateZ={40} className="mt-6">
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  <div>
-                    <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Project Title
-                    </label>
-                    <input
-                      type="text"
-                      id="title"
-                      name="title"
-                      value={formData.title}
-                      onChange={handleChange}
-                      required
-                      className="mt-1 block w-full rounded-md border border-gray-300 dark:border-zinc-700 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-zinc-900 focus:border-indigo-500 dark:focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:focus:ring-indigo-500"
-                    />
+                  {/* Basic Info Section */}
+                  <div className="p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg mb-6">
+                    <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Basic Information</h2>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Project Title
+                        </label>
+                        <input
+                          type="text"
+                          id="title"
+                          name="title"
+                          value={formData.title}
+                          onChange={handleChange}
+                          required
+                          className="mt-1 block w-full rounded-md border border-gray-300 dark:border-zinc-700 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-zinc-900 focus:border-indigo-500 dark:focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:focus:ring-indigo-500"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Short Description
+                        </label>
+                        <textarea
+                          id="description"
+                          name="description"
+                          value={formData.description}
+                          onChange={handleChange}
+                          required
+                          rows={2}
+                          className="mt-1 block w-full rounded-md border border-gray-300 dark:border-zinc-700 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-zinc-900 focus:border-indigo-500 dark:focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:focus:ring-indigo-500"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="detailed_description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Detailed Description
+                        </label>
+                        <textarea
+                          id="detailed_description"
+                          name="detailed_description"
+                          value={formData.detailed_description}
+                          onChange={handleChange}
+                          rows={4}
+                          className="mt-1 block w-full rounded-md border border-gray-300 dark:border-zinc-700 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-zinc-900 focus:border-indigo-500 dark:focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:focus:ring-indigo-500"
+                          placeholder="Provide technical details about the project..."
+                        />
+                      </div>
+                    </div>
                   </div>
                   
-                  <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Description
-                    </label>
-                    <textarea
-                      id="description"
-                      name="description"
-                      value={formData.description}
-                      onChange={handleChange}
-                      required
-                      rows={4}
-                      className="mt-1 block w-full rounded-md border border-gray-300 dark:border-zinc-700 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-zinc-900 focus:border-indigo-500 dark:focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:focus:ring-indigo-500"
-                    />
+                  {/* Location Section */}
+                  <div className="p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg mb-6">
+                    <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Location</h2>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <label htmlFor="location" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Location Name
+                        </label>
+                        <input
+                          type="text"
+                          id="location"
+                          name="location"
+                          value={formData.location}
+                          onChange={handleChange}
+                          required
+                          className="mt-1 block w-full rounded-md border border-gray-300 dark:border-zinc-700 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-zinc-900 focus:border-indigo-500 dark:focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:focus:ring-indigo-500"
+                        />
+                      </div>
+                      
+                      <div className="h-64 rounded-lg overflow-hidden border border-gray-300 dark:border-zinc-700">
+                        <MapSelector onLocationSelect={handleLocationSelect} />
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Latitude
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.latitude || ''}
+                            readOnly
+                            className="mt-1 block w-full rounded-md border border-gray-300 dark:border-zinc-700 px-3 py-2 text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-zinc-800"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Longitude
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.longitude || ''}
+                            readOnly
+                            className="mt-1 block w-full rounded-md border border-gray-300 dark:border-zinc-700 px-3 py-2 text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-zinc-800"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   
-                  <div>
-                    <label htmlFor="location" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Location
-                    </label>
-                    <input
-                      type="text"
-                      id="location"
-                      name="location"
-                      value={formData.location}
-                      onChange={handleChange}
-                      required
-                      className="mt-1 block w-full rounded-md border border-gray-300 dark:border-zinc-700 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-zinc-900 focus:border-indigo-500 dark:focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:focus:ring-indigo-500"
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label htmlFor="start_date" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Start Date
+                  {/* Timeline Section */}
+                  <div className="p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg mb-6">
+                    <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Timeline & Status</h2>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label htmlFor="start_date" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Start Date
+                        </label>
+                        <input
+                          type="date"
+                          id="start_date"
+                          name="start_date"
+                          value={formData.start_date}
+                          onChange={handleChange}
+                          required
+                          className="mt-1 block w-full rounded-md border border-gray-300 dark:border-zinc-700 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-zinc-900 focus:border-indigo-500 dark:focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:focus:ring-indigo-500"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="end_date" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          End Date
+                        </label>
+                        <input
+                          type="date"
+                          id="end_date"
+                          name="end_date"
+                          value={formData.end_date}
+                          onChange={handleChange}
+                          required
+                          className="mt-1 block w-full rounded-md border border-gray-300 dark:border-zinc-700 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-zinc-900 focus:border-indigo-500 dark:focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:focus:ring-indigo-500"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4">
+                      <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Status
                       </label>
-                      <input
-                        type="date"
-                        id="start_date"
-                        name="start_date"
-                        value={formData.start_date}
+                      <select
+                        id="status"
+                        name="status"
+                        value={formData.status}
                         onChange={handleChange}
-                        required
                         className="mt-1 block w-full rounded-md border border-gray-300 dark:border-zinc-700 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-zinc-900 focus:border-indigo-500 dark:focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:focus:ring-indigo-500"
+                      >
+                        <option value="planning">Planning</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                        <option value="on_hold">On Hold</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  {/* Resources Section */}
+                  <div className="p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg mb-6">
+                    <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Resources & Budget</h2>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label htmlFor="estimated_workers" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Estimated Workers
+                        </label>
+                        <input
+                          type="number"
+                          id="estimated_workers"
+                          name="estimated_workers"
+                          value={formData.estimated_workers}
+                          onChange={handleChange}
+                          min="0"
+                          className="mt-1 block w-full rounded-md border border-gray-300 dark:border-zinc-700 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-zinc-900 focus:border-indigo-500 dark:focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:focus:ring-indigo-500"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="budget" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Budget (₹)
+                        </label>
+                        <input
+                          type="number"
+                          id="budget"
+                          name="budget"
+                          value={formData.budget}
+                          onChange={handleChange}
+                          min="0"
+                          step="1000"
+                          className="mt-1 block w-full rounded-md border border-gray-300 dark:border-zinc-700 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-zinc-900 focus:border-indigo-500 dark:focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:focus:ring-indigo-500"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4">
+                      <label htmlFor="resource_allocation" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Resource Allocation Plan
+                      </label>
+                      <textarea
+                        id="resource_allocation"
+                        name="resource_allocation"
+                        value={formData.resource_allocation}
+                        onChange={handleChange}
+                        rows={3}
+                        className="mt-1 block w-full rounded-md border border-gray-300 dark:border-zinc-700 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-zinc-900 focus:border-indigo-500 dark:focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:focus:ring-indigo-500"
+                        placeholder="Describe how resources will be allocated and distributed..."
                       />
                     </div>
                     
-                    <div>
-                      <label htmlFor="end_date" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        End Date
+                    <div className="mt-4">
+                      <label htmlFor="equipment_requirements" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Equipment Requirements
                       </label>
-                      <input
-                        type="date"
-                        id="end_date"
-                        name="end_date"
-                        value={formData.end_date}
+                      <textarea
+                        id="equipment_requirements"
+                        name="equipment_requirements"
+                        value={formData.equipment_requirements}
                         onChange={handleChange}
-                        required
+                        rows={3}
                         className="mt-1 block w-full rounded-md border border-gray-300 dark:border-zinc-700 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-zinc-900 focus:border-indigo-500 dark:focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:focus:ring-indigo-500"
+                        placeholder="List any special equipment or machinery needed..."
                       />
                     </div>
                   </div>
                   
-                  <div>
-                    <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Status
-                    </label>
-                    <select
-                      id="status"
-                      name="status"
-                      value={formData.status}
-                      onChange={handleChange}
-                      className="mt-1 block w-full rounded-md border border-gray-300 dark:border-zinc-700 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-zinc-900 focus:border-indigo-500 dark:focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:focus:ring-indigo-500"
-                    >
-                      <option value="planning">Planning</option>
-                      <option value="in_progress">In Progress</option>
-                      <option value="completed">Completed</option>
-                      <option value="on_hold">On Hold</option>
-                    </select>
+                  {/* Risk & Supply Chain Section */}
+                  <div className="p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg mb-6">
+                    <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Risk & Supply Chain</h2>
+                    
+                    <div>
+                      <label htmlFor="risk_assessment" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Risk Assessment
+                      </label>
+                      <textarea
+                        id="risk_assessment"
+                        name="risk_assessment"
+                        value={formData.risk_assessment}
+                        onChange={handleChange}
+                        rows={3}
+                        className="mt-1 block w-full rounded-md border border-gray-300 dark:border-zinc-700 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-zinc-900 focus:border-indigo-500 dark:focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:focus:ring-indigo-500"
+                        placeholder="Identify potential risks and their likelihood..."
+                      />
+                    </div>
+                    
+                    <div className="mt-4">
+                      <label htmlFor="mitigation_strategies" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Mitigation Strategies
+                      </label>
+                      <textarea
+                        id="mitigation_strategies"
+                        name="mitigation_strategies"
+                        value={formData.mitigation_strategies}
+                        onChange={handleChange}
+                        rows={3}
+                        className="mt-1 block w-full rounded-md border border-gray-300 dark:border-zinc-700 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-zinc-900 focus:border-indigo-500 dark:focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:focus:ring-indigo-500"
+                        placeholder="Describe strategies to mitigate identified risks..."
+                      />
+                    </div>
+                    
+                    <div className="mt-4">
+                      <label htmlFor="supply_chain_requirements" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Supply Chain Requirements
+                      </label>
+                      <textarea
+                        id="supply_chain_requirements"
+                        name="supply_chain_requirements"
+                        value={formData.supply_chain_requirements}
+                        onChange={handleChange}
+                        rows={3}
+                        className="mt-1 block w-full rounded-md border border-gray-300 dark:border-zinc-700 px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-zinc-900 focus:border-indigo-500 dark:focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:focus:ring-indigo-500"
+                        placeholder="Outline supply chain requirements and potential suppliers..."
+                      />
+                    </div>
                   </div>
                   
                   <div className="flex justify-end">
@@ -274,6 +431,6 @@ export default function CreateProject() {
           </CardContainer>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

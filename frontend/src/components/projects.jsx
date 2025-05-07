@@ -1,13 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import DashboardLayout from './layout/DashboardLayout';
-import {
-    Sidebar,
-    SidebarBody,
-    SidebarLink,
-    SidebarHeader,
-    SidebarFooter
-} from './ui/sidebar';
 import { CardContainer, CardBody, CardItem } from './ui/3d-card';
 import { GlowingEffect } from './ui/glowing-effect';
 import {
@@ -17,46 +10,28 @@ import {
     IconBriefcase,
     IconCalendar,
     IconUsers,
-    IconLogout,
     IconChartPie,
     IconPlus,
     IconCalendarTime,
     IconMapPin
 } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { Link } from 'react-router-dom';
 
 export default function Projects() {
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
 
-    // Define sidebar navigation links
-    const navLinks = [
-        { label: 'Dashboard', href: '/', icon: <IconHome className="h-5 w-5 text-neutral-500 dark:text-neutral-400" /> },
-        { label: 'Projects', href: '/projects', icon: <IconBriefcase className="h-5 w-5 text-neutral-500 dark:text-neutral-400" /> },
-        { label: 'Schedule', href: '#', icon: <IconCalendar className="h-5 w-5 text-neutral-500 dark:text-neutral-400" /> },
-        { label: 'Team', href: '#', icon: <IconUsers className="h-5 w-5 text-neutral-500 dark:text-neutral-400" /> },
-        { label: 'Analytics', href: '#', icon: <IconChartPie className="h-5 w-5 text-neutral-500 dark:text-neutral-400" /> },
-        { label: 'Profile', href: '/profile', icon: <IconUser className="h-5 w-5 text-neutral-500 dark:text-neutral-400" /> },
-        { label: 'Settings', href: '#', icon: <IconSettings className="h-5 w-5 text-neutral-500 dark:text-neutral-400" /> },
-    ];
-
     const fetchProjects = async () => {
         try {
-            console.log("Fetching projects...");
             setLoading(true);
             setError(null);
             const token = localStorage.getItem('token');
-            console.log("Token available:", !!token);
-            
+
             if (token) {
                 const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/projects/`;
-                console.log("API URL:", apiUrl);
-                
                 const response = await fetch(apiUrl, {
                     method: 'GET',
                     headers: {
@@ -64,20 +39,12 @@ export default function Projects() {
                         'Content-Type': 'application/json'
                     }
                 });
-                
-                console.log("Response status:", response.status);
+
                 const data = await response.json();
-                
-                if (!response.ok) {
-                    console.error("API error response:", data);
-                    throw new Error(data.detail || 'Failed to fetch projects');
-                }
-                
-                console.log('Projects fetched:', data);
+                if (!response.ok) throw new Error(data.detail || 'Failed to fetch projects');
                 setProjects(data);
             }
         } catch (error) {
-            console.error('Error fetching projects:', error);
             setError(error.message || 'Failed to load projects');
         } finally {
             setLoading(false);
@@ -88,40 +55,32 @@ export default function Projects() {
         fetchProjects();
     }, []);
 
-    const handleCreateProject = () => {
-        navigate('/create-project');
-    };
+    const handleCreateProject = () => navigate('/create-project');
+    const handleProjectClick = (projectId) => navigate(`/projects/${projectId}`);
 
-    const handleProjectClick = (projectId) => {
-        navigate(`/projects/${projectId}`);
-    };
-
-    // Status colors for project cards
     const statusColors = {
-        'planning': 'bg-blue-500',
-        'in_progress': 'bg-amber-500',
-        'completed': 'bg-green-500',
-        'on_hold': 'bg-red-500'
+        planning: 'bg-blue-500',
+        in_progress: 'bg-amber-500',
+        completed: 'bg-green-500',
+        on_hold: 'bg-red-500'
     };
 
     return (
         <DashboardLayout>
-        <div className="p-8 pt-6">
+            <div className="p-8 pt-6">
                 <div className="max-w-7xl mx-auto">
-                    {/* Header */}
                     <div className="mb-8">
                         <h1 className="text-2xl font-bold dark:text-white">Projects</h1>
                         <p className="text-gray-600 dark:text-gray-400 mt-1">Manage and monitor your construction projects</p>
                     </div>
 
-                    {/* Projects Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {error && (
                             <div className="col-span-full">
                                 <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400">
                                     <p className="font-medium">Error loading projects: {error}</p>
-                                    <button 
-                                        onClick={fetchProjects} 
+                                    <button
+                                        onClick={fetchProjects}
                                         className="mt-2 text-sm bg-red-100 dark:bg-red-800/30 px-3 py-1 rounded-md hover:bg-red-200 dark:hover:bg-red-800/50"
                                     >
                                         Retry
@@ -129,7 +88,7 @@ export default function Projects() {
                                 </div>
                             </div>
                         )}
-                        {/* Create Project Card - Only visible for supervisors */}
+
                         {user?.role === 'supervisor' && (
                             <CardContainer containerClassName="py-0 h-full">
                                 <CardBody
@@ -148,19 +107,17 @@ export default function Projects() {
                             </CardContainer>
                         )}
 
-                        {/* Project Cards */}
                         {loading ? (
-                            // Loading state
                             Array(6).fill().map((_, index) => (
                                 <div key={index} className="h-64 rounded-xl bg-gray-200 dark:bg-zinc-800 animate-pulse"></div>
                             ))
                         ) : projects.length === 0 ? (
-                            // No projects state
                             <div className="col-span-full text-center py-12">
-                                <p className="text-gray-500 dark:text-gray-400">No projects found. {user?.role === 'supervisor' ? 'Create your first project!' : 'You have not been assigned to any projects yet.'}</p>
+                                <p className="text-gray-500 dark:text-gray-400">
+                                    No projects found. {user?.role === 'supervisor' ? 'Create your first project!' : 'You have not been assigned to any projects yet.'}
+                                </p>
                             </div>
                         ) : (
-                            // Project cards
                             projects.map((project) => (
                                 <CardContainer key={project.id} containerClassName="py-0 h-full">
                                     <CardBody
@@ -171,7 +128,6 @@ export default function Projects() {
 
                                         <CardItem translateZ={20}>
                                             <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate pr-4">{project.title}</h3>
-
                                             <div className="mt-3 flex items-center text-sm text-gray-500 dark:text-gray-400">
                                                 <IconMapPin className="h-4 w-4 mr-1" />
                                                 <span className="truncate">{project.location}</span>
@@ -179,9 +135,7 @@ export default function Projects() {
                                         </CardItem>
 
                                         <CardItem translateZ={30} className="mt-4">
-                                            <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
-                                                {project.description}
-                                            </p>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{project.description}</p>
                                         </CardItem>
 
                                         <CardItem translateZ={40} className="mt-6">
@@ -192,12 +146,8 @@ export default function Projects() {
                                                         {new Date(project.start_date).toLocaleDateString()} - {new Date(project.end_date).toLocaleDateString()}
                                                     </span>
                                                 </div>
-
                                                 <span className={`px-2.5 py-1 text-xs rounded-full capitalize 
-                          ${project.status === 'planning' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
-                                                        project.status === 'in_progress' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' :
-                                                            project.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
-                                                                'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
+                                                    ${statusColors[project.status]}`}>
                                                     {project.status.replace('_', ' ')}
                                                 </span>
                                             </div>
@@ -209,7 +159,7 @@ export default function Projects() {
                             ))
                         )}
                     </div>
-                    </div>
+                </div>
             </div>
         </DashboardLayout>
     );

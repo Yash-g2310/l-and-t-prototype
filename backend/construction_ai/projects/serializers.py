@@ -4,7 +4,6 @@ from .models import (
     ProjectTimeline, RiskAnalysis
 )
 from accounts.models import User
-from django.contrib.gis.geos import Point
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -104,21 +103,3 @@ class ProjectSerializer(serializers.ModelSerializer):
             'workers', 'suppliers', 'timeline_events', 'risks', 'updates',
             'lat', 'lng'
         ]
-    
-    def create(self, validated_data):
-        lat = validated_data.pop('lat', None)
-        lng = validated_data.pop('lng', None)
-        
-        if lat is not None and lng is not None:
-            validated_data['location_coordinates'] = Point(lng, lat)
-        
-        return super().create(validated_data)
-    
-    def update(self, instance, validated_data):
-        lat = validated_data.pop('lat', None)
-        lng = validated_data.pop('lng', None)
-        
-        if lat is not None and lng is not None:
-            instance.location_coordinates = Point(lng, lat)
-        
-        return super().update(instance, validated_data)

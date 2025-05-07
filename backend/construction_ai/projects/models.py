@@ -1,7 +1,5 @@
 from django.db import models
-from django.contrib.gis.db import models as gis_models
 from accounts.models import User
-from django.contrib.gis.geos import Point
 import uuid
 
 class Project(models.Model):
@@ -29,7 +27,9 @@ class Project(models.Model):
     
     # Location and timeline fields
     location = models.CharField(max_length=255)
-    location_coordinates = gis_models.PointField(blank=True, null=True)
+    # Replace PointField with regular fields
+    latitude = models.FloatField(blank=True, null=True)
+    longitude = models.FloatField(blank=True, null=True)
     start_date = models.DateField()
     end_date = models.DateField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='planning')
@@ -49,10 +49,12 @@ class Project(models.Model):
         return self.title
     
     def save(self, *args, **kwargs):
-        # Default coordinates if none provided (can be overwritten by map selection)
-        if not self.location_coordinates:
-            self.location_coordinates = Point(0, 0)
+        # Remove Point reference
         super().save(*args, **kwargs)
+        
+        # Create a chat room for this project if it doesn't exist
+        from chat.models import ChatRoom
+        ChatRoom.objects.get_or_create(project=self)
         
 
 class ProjectSupplier(models.Model):

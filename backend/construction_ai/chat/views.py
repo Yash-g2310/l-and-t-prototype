@@ -48,9 +48,9 @@ class MessageViewSet(viewsets.ModelViewSet):
                 pass
         return Message.objects.none()
     
-    def perform_create(self, serializer):
+    def create(self, request, *args, **kwargs):
         """Create a message and generate AI response"""
-        chat_room_id = self.request.data.get('chat_room_id')
+        chat_room_id = request.data.get('chat_room_id')
         if not chat_room_id:
             return Response({"detail": "chat_room_id is required"}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -59,17 +59,21 @@ class MessageViewSet(viewsets.ModelViewSet):
             project = chat_room.project
             
             # Check permissions
-            user = self.request.user
+            user = request.user
             if not ((user.role == 'supervisor' and project.supervisor == user) or 
                    (user.role == 'worker' and ProjectWorker.objects.filter(project=project, worker=user).exists())):
                 return Response({"detail": "You don't have permission to chat in this project"}, 
                                status=status.HTTP_403_FORBIDDEN)
-                
+            
+            # Create serializer with request data
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            
             # Save the message
-            user_message = serializer.save(sender=self.request.user, chat_room=chat_room)
+            user_message = serializer.save(sender=request.user, chat_room=chat_room)
             
             # Check if this is marked as an update
-            is_update = self.request.data.get('is_update', False)
+            is_update = request.data.get('is_update', False)
             if is_update and user.role == 'supervisor':
                 user_message.is_update = True
                 user_message.save(update_fields=['is_update'])
@@ -77,7 +81,7 @@ class MessageViewSet(viewsets.ModelViewSet):
             # Process with LLM and create AI response
             ai_response = self.get_ai_response(user_message.content, project)
             Message.objects.create(
-                sender=self.request.user,  # Using same sender but marking as AI response
+                sender=request.user,  # Using same sender but marking as AI response
                 chat_room=chat_room,
                 content=ai_response,
                 is_ai_response=True
