@@ -169,7 +169,7 @@ const ProjectDetailsSection = React.memo(function ProjectDetailsSection({ formDa
       id="details" 
       title="Project Details" 
       icon={<IconClipboardCheck className="h-6 w-6" />} 
-      color="indigo"
+      color="purple"
     >
       <div className="grid grid-cols-1 gap-6">
         <div>
