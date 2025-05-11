@@ -5,8 +5,10 @@ import {
   IconUserCircle,
   IconBell,
   IconClock,
-  IconInfoCircle
+  IconInfoCircle,
+  IconCalendarEvent
 } from '@tabler/icons-react';
+import { GlowingEffect } from '../ui/glowing-effect';
 
 export default function ProjectUpdates({ chatRoomId, projectTitle }) {
   const [updates, setUpdates] = useState([]);
@@ -23,12 +25,15 @@ export default function ProjectUpdates({ chatRoomId, projectTitle }) {
     try {
       setLoading(true);
       setError(null);
+      console.log('Fetching messages for updates from chat room:', chatRoomId);
       const messages = await getMessages(chatRoomId);
       
       // Filter for messages flagged as updates
       const projectUpdates = messages.filter(msg => msg.is_update);
+      console.log('Found updates:', projectUpdates.length);
       setUpdates(projectUpdates);
     } catch (err) {
+      console.error('Error fetching updates:', err);
       setError(err.detail || 'Failed to load updates');
     } finally {
       setLoading(false);
@@ -58,8 +63,9 @@ export default function ProjectUpdates({ chatRoomId, projectTitle }) {
 
   return (
     <div className="p-6">
-      <div className="mb-4 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-        <div className="flex items-start">
+      <div className="mb-4 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 relative">
+        <GlowingEffect disabled={false} borderWidth={1} spread={20} />
+        <div className="flex items-start relative z-10">
           <IconInfoCircle className="h-5 w-5 text-blue-500 dark:text-blue-400 mt-0.5 mr-2 flex-shrink-0" />
           <div className="text-sm text-blue-700 dark:text-blue-300">
             <p className="font-medium">Project Updates</p>
@@ -113,8 +119,9 @@ export default function ProjectUpdates({ chatRoomId, projectTitle }) {
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <div className="bg-white dark:bg-neutral-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-                          <div className="flex items-center justify-between mb-2">
+                        <div className="bg-white dark:bg-neutral-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 p-4 relative">
+                          <GlowingEffect disabled={false} borderWidth={0.5} spread={15} />
+                          <div className="flex items-center justify-between mb-2 relative z-10">
                             <div>
                               <span className="text-sm font-medium text-gray-900 dark:text-white">
                                 {update.sender.first_name} {update.sender.last_name}
@@ -125,12 +132,12 @@ export default function ProjectUpdates({ chatRoomId, projectTitle }) {
                             </div>
                             
                             <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-                              <IconClock className="h-3.5 w-3.5 mr-1" />
+                              <IconCalendarEvent className="h-3.5 w-3.5 mr-1" />
                               {formatDate(update.created_at)}
                             </div>
                           </div>
                           
-                          <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                          <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap relative z-10">
                             {update.content}
                           </p>
                         </div>

@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { 
-  getMessages, 
-  sendMessage 
-} from '../../services/projectService';
+import { getMessages, sendMessage } from '../../services/projectService';
 import { 
   IconSend, 
   IconLoader2,
@@ -12,6 +9,7 @@ import {
   IconInfoCircle,
   IconClock
 } from '@tabler/icons-react';
+import { GlowingEffect } from '../ui/glowing-effect';
 
 export default function ProjectChat({ chatRoomId, projectId, projectTitle, userRole }) {
   const { user } = useAuth();
@@ -37,10 +35,13 @@ export default function ProjectChat({ chatRoomId, projectId, projectTitle, userR
   const fetchMessages = async () => {
     try {
       setError(null);
+      console.log('Fetching messages for chat room:', chatRoomId);
       const data = await getMessages(chatRoomId);
+      console.log('Messages retrieved:', data);
       setMessages(data);
       if (loading) setLoading(false);
     } catch (err) {
+      console.error('Error fetching messages:', err);
       setError(err.detail || 'Failed to load messages');
       setLoading(false);
     }
@@ -62,6 +63,10 @@ export default function ProjectChat({ chatRoomId, projectId, projectTitle, userR
       setSending(true);
       setError(null);
       
+      console.log('Sending message to chatroom:', chatRoomId);
+      console.log('Message content:', input);
+      console.log('Is update:', markAsUpdate);
+      
       // Send the message
       await sendMessage(chatRoomId, input, markAsUpdate);
       
@@ -72,6 +77,7 @@ export default function ProjectChat({ chatRoomId, projectId, projectTitle, userR
       setInput('');
       setMarkAsUpdate(false);
     } catch (err) {
+      console.error('Error sending message:', err);
       setError(err.detail || 'Failed to send message');
     } finally {
       setSending(false);
@@ -94,8 +100,9 @@ export default function ProjectChat({ chatRoomId, projectId, projectTitle, userR
 
   return (
     <div className="p-6">
-      <div className="mb-4 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-        <div className="flex items-start">
+      <div className="mb-4 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 relative">
+        <GlowingEffect disabled={false} borderWidth={1} spread={20} />
+        <div className="flex items-start relative z-10">
           <IconInfoCircle className="h-5 w-5 text-blue-500 dark:text-blue-400 mt-0.5 mr-2 flex-shrink-0" />
           <div className="text-sm text-blue-700 dark:text-blue-300">
             <p className="font-medium">Project AI Assistant</p>

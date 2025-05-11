@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import DashboardLayout from '../layout/DashboardLayout';
@@ -18,10 +18,9 @@ import {
   IconCalendarEvent,
   IconUsers,
   IconPackage,
-  IconAlertTriangle,
-  IconChevronRight
+  IconAlertTriangle
 } from '@tabler/icons-react';
-import axios from 'axios';
+import { getProject, getChatRooms } from '../../services/projectService';
 import {
   Navbar,
   NavBody,
@@ -31,74 +30,8 @@ import {
   MobileNavToggle,
   MobileNavMenu,
 } from '../ui/resizable-navbar';
-
-// Enhanced floating dock for sub-navigation with icons-only interface
-const FloatingDock = ({ activeSection, setActiveSection, sections }) => {
-  const [hoveredIcon, setHoveredIcon] = useState(null);
-  
-  return (
-    <motion.div
-      className="fixed left-1/2 bottom-8 transform -translate-x-1/2 z-50 bg-white/90 dark:bg-neutral-900/90 rounded-full px-3 py-2 shadow-xl border border-gray-200 dark:border-gray-800 backdrop-blur-sm"
-      initial={{ y: 100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{
-        type: "spring",
-        stiffness: 260,
-        damping: 20
-      }}
-    >
-      <div className="flex items-center space-x-1">
-        {sections.map((section) => (
-          <motion.button
-            key={section.id}
-            onClick={() => setActiveSection(section.id)}
-            onMouseEnter={() => setHoveredIcon(section.id)}
-            onMouseLeave={() => setHoveredIcon(null)}
-            className={`relative p-2.5 rounded-full transition-all ${
-              activeSection === section.id
-                ? 'text-white'
-                : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-            }`}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            {activeSection === section.id && (
-              <motion.div
-                layoutId="floatingDockActiveIndicator"
-                className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-indigo-600 dark:from-indigo-600 dark:to-indigo-800 rounded-full -z-10"
-                transition={{
-                  type: "spring",
-                  stiffness: 400,
-                  damping: 30
-                }}
-              />
-            )}
-            
-            <span className="relative z-10">{section.icon}</span>
-            
-            {/* Label that appears on hover */}
-            <AnimatePresence>
-              {hoveredIcon === section.id && (
-                <motion.div
-                  initial={{ opacity: 0, y: -20, scale: 0.6 }}
-                  animate={{ opacity: 1, y: -35, scale: 1 }}
-                  exit={{ opacity: 0, y: -20, scale: 0.6 }}
-                  className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 text-xs font-medium rounded-md whitespace-nowrap ${
-                    activeSection === section.id
-                      ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/70 dark:text-indigo-300'
-                      : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
-                  }`}
-                >
-                  {section.label}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.button>
-        ))}
-      </div>
-    </motion.div>
-  );
-};
+import { FloatingDock } from '../ui/floating-dock';
+import { TextRevealCard } from '../ui/text-reveal-card';
 
 export default function ProjectDetail() {
   const { projectId } = useParams();
@@ -111,39 +44,44 @@ export default function ProjectDetail() {
   const [subSection, setSubSection] = useState('basic');
   const [chatRoom, setChatRoom] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const navbarRef = useRef(null);
+  
+  // Keep track of manually selected section
+  const mainSectionRef = useRef('details');
 
   useEffect(() => {
     const fetchProject = async () => {
       try {
         setLoading(true);
         setError(null);
-        const token = localStorage.getItem('token');
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
         
-        const response = await axios.get(
-          `${API_URL}/api/projects/${projectId}/`, 
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        // Fetch project details
+        console.log('Fetching project with ID:', projectId);
+        const projectData = await getProject(projectId);
+        setProject(projectData);
         
-        setProject(response.data);
+        // Fetch chat rooms to find the one for this project
+        const chatRoomsData = await getChatRooms();
+        console.log('Chat rooms received:', chatRoomsData);
         
-        // Fetch chat room for this project
-        const chatRoomsResponse = await axios.get(
-          `${API_URL}/api/chat-rooms/`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        
-        const projectChatRoom = chatRoomsResponse.data.find(
-          room => room.project === parseInt(projectId)
+        // Try both string and number comparison
+        const projectChatRoom = chatRoomsData.find(
+          room => room.project === parseInt(projectId) || room.project === projectId
         );
         
         if (projectChatRoom) {
+          console.log('Found chat room:', projectChatRoom);
           setChatRoom(projectChatRoom);
+        } else {
+          console.warn('No chat room found for this project. Creating fallback.');
+          // Create a fallback chat room object so UI doesn't break
+          setChatRoom({
+            id: null,
+            project: parseInt(projectId)
+          });
         }
       } catch (err) {
         console.error('Error fetching project:', err);
-        setError(err.response?.data?.detail || 'Failed to load project details.');
+        setError(typeof err === 'string' ? err : 'Failed to load project details.');
       } finally {
         setLoading(false);
       }
@@ -159,51 +97,71 @@ export default function ProjectDetail() {
     { name: 'Updates', link: '#updates', id: 'updates' },
   ];
 
-  // Sub-section items for the floating dock - styled like create project page
-  const subSections = [
-    { 
-      id: 'basic', 
-      label: 'Basic Info', 
-      icon: <IconClipboardCheck className="h-5 w-5" /> 
+  // Sub-section items for the floating dock
+  const dockItems = [
+    {
+      title: 'Basic Info',
+      icon: <IconClipboardCheck className="h-5 w-5 text-neutral-500 dark:text-neutral-400" />,
+      href: "#basic",
+      onClick: () => setSubSection('basic')
     },
-    { 
-      id: 'timeline', 
-      label: 'Timeline', 
-      icon: <IconCalendarEvent className="h-5 w-5" /> 
+    {
+      title: 'Timeline',
+      icon: <IconCalendarEvent className="h-5 w-5 text-neutral-500 dark:text-neutral-400" />,
+      href: "#timeline",
+      onClick: () => setSubSection('timeline')
     },
-    { 
-      id: 'workers', 
-      label: 'Workers', 
-      icon: <IconUsers className="h-5 w-5" /> 
+    {
+      title: 'Workers',
+      icon: <IconUsers className="h-5 w-5 text-neutral-500 dark:text-neutral-400" />,
+      href: "#workers",
+      onClick: () => setSubSection('workers')
     },
-    { 
-      id: 'suppliers', 
-      label: 'Suppliers', 
-      icon: <IconPackage className="h-5 w-5" /> 
+    {
+      title: 'Suppliers',
+      icon: <IconPackage className="h-5 w-5 text-neutral-500 dark:text-neutral-400" />,
+      href: "#suppliers",
+      onClick: () => setSubSection('suppliers')
     },
-    { 
-      id: 'risks', 
-      label: 'Risk Analysis', 
-      icon: <IconAlertTriangle className="h-5 w-5" /> 
-    },
+    {
+      title: 'Risk Analysis',
+      icon: <IconAlertTriangle className="h-5 w-5 text-neutral-500 dark:text-neutral-400" />,
+      href: "#risks",
+      onClick: () => setSubSection('risks')
+    }
   ];
 
-  // Handle navigation item clicks
-  const handleNavItemClick = (item) => {
+  // Handle navigation item clicks - using reference to ensure state updates consistently
+  const handleNavItemClick = useCallback((item) => {
     const sectionId = item.id || item.link.replace('#', '');
-    setMainSection(sectionId);
+    console.log('Navigation clicked:', sectionId, 'Current:', mainSectionRef.current);
     
-    // Reset subsection to default when switching main sections
+    // Update both the state and ref
+    setMainSection(sectionId);
+    mainSectionRef.current = sectionId;
+    
+    // Reset subsection when changing main section
     if (sectionId === 'details') {
       setSubSection('basic');
     }
     
     setIsMobileMenuOpen(false);
+  }, []);
+
+  // Get the status color class
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'planning': return 'bg-blue-600';
+      case 'in_progress': return 'bg-amber-600';
+      case 'completed': return 'bg-green-600';
+      case 'on_hold': return 'bg-red-600';
+      default: return 'bg-gray-500';
+    }
   };
 
   // Project logo/icon component
   const ProjectLogo = () => (
-    <div className="flex items-center z-10">
+    <div className="flex items-center">
       <div className="h-8 w-8 rounded-md bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mr-3">
         <IconInfoCircle className="h-5 w-5 text-white" />
       </div>
@@ -212,6 +170,15 @@ export default function ProjectDetail() {
       </span>
     </div>
   );
+
+  // Log state for debugging
+  console.log('Current state:', {
+    mainSection, 
+    subSection,
+    chatRoom: chatRoom ? 'Loaded' : 'Not loaded',
+    chatRoomId: chatRoom?.id,
+    user: user?.role
+  });
 
   if (loading) {
     return (
@@ -266,18 +233,8 @@ export default function ProjectDetail() {
   // If worker tries to access details tab, redirect to chat
   if (user.role === 'worker' && mainSection === 'details') {
     setMainSection('chat');
+    mainSectionRef.current = 'chat';
   }
-  
-  // Get the status color class
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'planning': return 'bg-blue-600';
-      case 'in_progress': return 'bg-amber-600';
-      case 'completed': return 'bg-green-600';
-      case 'on_hold': return 'bg-red-600';
-      default: return 'bg-gray-500';
-    }
-  };
 
   return (
     <DashboardLayout>
@@ -302,17 +259,43 @@ export default function ProjectDetail() {
           </div>
         </div>
       
-        {/* Properly implemented Resizable Navbar with sticky behavior */}
+        {/* Resizable Navbar for top navigation */}
         <div className="relative w-full">
-          <Navbar className="top-0 sticky">
+          <Navbar className="sticky top-0">
             {/* Desktop Navigation */}
-            <NavBody ref={navbarRef}>
-              <ProjectLogo />
-              <NavItems 
-                items={navItems} 
-                onItemClick={handleNavItemClick}
-                activeItemId={mainSection}
-              />
+            <NavBody>
+              {/* Using TextRevealCard for fancy project title display */}
+              <TextRevealCard
+                text={project.title}
+                revealText={project.title}
+                className="bg-transparent w-auto h-16 p-0 border-none"
+              >
+                <div className="absolute inset-0"></div>
+              </TextRevealCard>
+              
+              {/* Manual implementation of nav items to ensure they work */}
+              <div className="flex items-center space-x-6">
+                {navItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleNavItemClick(item)}
+                    className={`relative py-1.5 text-sm transition focus-visible:outline-none ${
+                      mainSection === item.id 
+                        ? 'text-neutral-900 dark:text-neutral-100 font-medium'
+                        : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-300'
+                    }`}
+                  >
+                    {item.name}
+                    {mainSection === item.id && (
+                      <motion.div
+                        layoutId="navbar-indicator"
+                        className="absolute -bottom-0.5 left-0 right-0 h-0.5 bg-neutral-900 dark:bg-neutral-100"
+                        transition={{ type: "spring", duration: 0.6 }}
+                      />
+                    )}
+                  </button>
+                ))}
+              </div>
             </NavBody>
 
             {/* Mobile Navigation */}
@@ -348,7 +331,7 @@ export default function ProjectDetail() {
         </div>
         
         {/* Main content area */}
-        <div className="p-6 pt-12 max-w-7xl mx-auto mb-24">
+        <div className="p-6 pt-12 max-w-7xl mx-auto">
           <AnimatePresence mode="wait">
             <motion.div
               key={mainSection}
@@ -356,7 +339,9 @@ export default function ProjectDetail() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
+              className="mb-24" // Extra space for floating dock
             >
+              {/* PROJECT DETAILS SECTION */}
               {mainSection === 'details' && (
                 <>
                   <div className="mb-6">
@@ -369,7 +354,6 @@ export default function ProjectDetail() {
                   </div>
                   
                   <div className="relative">
-                    {/* Restore glowing effect */}
                     <GlowingEffect disabled={false} borderWidth={1.5} spread={40} />
                     
                     <ProjectDetailForm 
@@ -380,19 +364,18 @@ export default function ProjectDetail() {
                     />
                   </div>
                   
-                  {/* Floating dock with icons-only design */}
+                  {/* Show floating dock only for details section */}
                   <FloatingDock 
-                    activeSection={subSection} 
-                    setActiveSection={setSubSection} 
-                    sections={subSections} 
+                    items={dockItems}
+                    desktopClassName="fixed left-1/2 bottom-8 transform -translate-x-1/2 z-50"
                   />
                 </>
               )}
               
-              {mainSection === 'chat' && chatRoom && (
+              {/* AI ASSISTANT SECTION */}
+              {mainSection === 'chat' && (
                 <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700 relative">
-                  {/* Add glowing effect to chat section too */}
-                  <GlowingEffect disabled={false} borderWidth={1.5} spread={40} />
+                  <GlowingEffect disabled={false} borderWidth={1} spread={30} />
                   
                   <div className="border-b border-gray-200 dark:border-gray-700 p-4 relative z-10">
                     <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
@@ -404,20 +387,34 @@ export default function ProjectDetail() {
                     </p>
                   </div>
                   <div className="relative z-10">
-                    <ProjectChat 
-                      chatRoomId={chatRoom.id} 
-                      projectId={project.id}
-                      projectTitle={project.title}
-                      userRole={user.role} 
-                    />
+                    {chatRoom?.id ? (
+                      <ProjectChat 
+                        chatRoomId={chatRoom.id} 
+                        projectId={project.id}
+                        projectTitle={project.title}
+                        userRole={user.role} 
+                      />
+                    ) : (
+                      <div className="p-6 text-center">
+                        <p className="text-gray-500 dark:text-gray-400 mb-4">
+                          Chat functionality is currently unavailable. Please try again later.
+                        </p>
+                        <button
+                          onClick={() => window.location.reload()}
+                          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                        >
+                          Reload Page
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
               
-              {mainSection === 'updates' && chatRoom && (
+              {/* UPDATES SECTION */}
+              {mainSection === 'updates' && (
                 <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700 relative">
-                  {/* Add glowing effect to updates section too */}
-                  <GlowingEffect disabled={false} borderWidth={1.5} spread={40} />
+                  <GlowingEffect disabled={false} borderWidth={1} spread={30} />
                   
                   <div className="border-b border-gray-200 dark:border-gray-700 p-4 relative z-10">
                     <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
@@ -429,10 +426,24 @@ export default function ProjectDetail() {
                     </p>
                   </div>
                   <div className="relative z-10">
-                    <ProjectUpdates 
-                      chatRoomId={chatRoom.id}
-                      projectTitle={project.title}
-                    />
+                    {chatRoom?.id ? (
+                      <ProjectUpdates 
+                        chatRoomId={chatRoom.id}
+                        projectTitle={project.title}
+                      />
+                    ) : (
+                      <div className="p-6 text-center">
+                        <p className="text-gray-500 dark:text-gray-400 mb-4">
+                          Updates functionality is currently unavailable. Please try again later.
+                        </p>
+                        <button
+                          onClick={() => window.location.reload()}
+                          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                        >
+                          Reload Page
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
