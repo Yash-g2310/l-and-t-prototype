@@ -8,6 +8,7 @@ import ProjectUpdates from './ProjectUpdates';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BackgroundGradient } from '../ui/background-gradient';
 import { GlowingEffect } from '../ui/glowing-effect';
+import HardcodedChatbot from './chatbot';
 import {
   IconInfoCircle,
   IconMessage,
@@ -374,42 +375,26 @@ export default function ProjectDetail() {
               
               {/* AI ASSISTANT SECTION */}
               {mainSection === 'chat' && (
-                <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700 relative">
-                  <GlowingEffect disabled={false} borderWidth={1} spread={30} />
-                  
-                  <div className="border-b border-gray-200 dark:border-gray-700 p-4 relative z-10">
-                    <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
-                      <IconMessage className="mr-2 h-5 w-5 text-indigo-500 dark:text-indigo-400" />
-                      AI Assistant
-                    </h2>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      Ask questions about this project or get assistance with tasks
-                    </p>
-                  </div>
-                  <div className="relative z-10">
-                    {chatRoom?.id ? (
-                      <ProjectChat 
-                        chatRoomId={chatRoom.id} 
-                        projectId={project.id}
-                        projectTitle={project.title}
-                        userRole={user.role} 
-                      />
-                    ) : (
-                      <div className="p-6 text-center">
-                        <p className="text-gray-500 dark:text-gray-400 mb-4">
-                          Chat functionality is currently unavailable. Please try again later.
-                        </p>
-                        <button
-                          onClick={() => window.location.reload()}
-                          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-                        >
-                          Reload Page
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+  <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700 relative">
+    <GlowingEffect disabled={false} borderWidth={1} spread={30} />
+    
+    <div className="border-b border-gray-200 dark:border-gray-700 p-4 relative z-10">
+      <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
+        <IconMessage className="mr-2 h-5 w-5 text-indigo-500 dark:text-indigo-400" />
+        AI Assistant
+      </h2>
+      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+        Ask questions about this project or get assistance with tasks
+      </p>
+    </div>
+    
+    <div className="relative z-10">
+      <HardcodedChatbot 
+        projectTitle={project.title}
+      />
+    </div>
+  </div>
+)}
               
               {/* UPDATES SECTION */}
               {mainSection === 'updates' && (
@@ -430,6 +415,7 @@ export default function ProjectDetail() {
                       <ProjectUpdates 
                         chatRoomId={chatRoom.id}
                         projectTitle={project.title}
+                        userRole = {user.role}
                       />
                     ) : (
                       <div className="p-6 text-center">
